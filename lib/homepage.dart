@@ -19,16 +19,24 @@ class _HomePageState extends State<HomePage> {
   int ghost = numberInRow * 1 + 1; // Posición inicial del fantasma
 
   List<int> barriers = [
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 22, 33, 44, 55, 66, 77, 88, 99, 110,
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 22, 33, 44, 55, 66, 77, 99, 110,
     121, 132, 143, 154, 165, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185,
-    186, 175, 164, 153, 142, 131, 120, 109, 98, 87, 76, 65, 54, 43, 32, 21, 57,
+    186, 175, 164, 153, 142, 131, 120, 109, 87, 76, 65, 54, 43, 32, 21, 57,
     46, 35, 24, 37, 26, 38, 39, 28, 30, 41, 52, 63, 59, 61, 70, 72, 78, 79, 80,
     81, 83, 84, 85, 86, 100, 101, 102, 103, 105, 106, 107, 108, 114, 116, 125,
     127, 123, 134, 145, 156, 129, 140, 151, 162, 147, 148, 149, 158, 160
   ];
 
+  List<int> food = [];
+  String direction = "right";
+  bool preGame = true;
+  bool mouthClosed = false;
+  int score = 0;
+  Timer? gameTimer;
+
   // Lógica para inicializar la comida
   void getFood() {
+    food.clear(); // Limpiar la lista de comida antes de inicializarla
     for (int i = 0; i < numberOfSquares; i++) {
       if (!barriers.contains(i)) {
         food.add(i);
@@ -36,23 +44,77 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  List<int> food = [];
-
-  String direction = "right";
-  bool preGame = true;
-  bool mouthClosed = false;
-  int score = 0;
+  // Reiniciar el juego
+  void resetGame() {
+    setState(() {
+      player = numberInRow * 15 + 1; // Posición inicial del jugador
+      ghost = numberInRow * 1 + 1; // Posición inicial del fantasma
+      score = 0; // Reiniciar el score
+      direction = "right"; // Reiniciar la dirección
+      preGame = true; // Volver al estado pre-juego
+      food.clear(); // Limpiar la lista de comida
+      getFood(); // Inicializar la comida nuevamente
+    });
+  }
 
   // Lógica para iniciar el juego
   void startGame() {
     preGame = false;
     getFood(); // Inicializar la lista de comida
-    Timer.periodic(Duration(milliseconds: 120), (timer) {
+    gameTimer = Timer.periodic(Duration(milliseconds: 190), (timer) {
       if (food.contains(player)) {
         setState(() {
           food.remove(player); // Eliminar la comida si el jugador está sobre ella
           score++;
         });
+      }
+
+      // Verificar si el jugador ha ganado
+      if (score == 87) {
+        timer.cancel(); // Detener el temporizador
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text("¡Ganaste!"),
+              content: Text("Felicidades, has alcanzado un score de 87."),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    resetGame(); // Reiniciar el juego
+                  },
+                  child: Text("OK"),
+                ),
+              ],
+            );
+          },
+        );
+        return;
+      }
+
+      // Verificar si el jugador ha perdido
+      if (player == ghost) {
+        timer.cancel(); // Detener el temporizador
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text("¡Perdiste!"),
+              content: Text("El fantasma te ha atrapado."),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    resetGame(); // Reiniciar el juego
+                  },
+                  child: Text("OK"),
+                ),
+              ],
+            );
+          },
+        );
+        return;
       }
 
       moveGhost(); // Mover el fantasma
