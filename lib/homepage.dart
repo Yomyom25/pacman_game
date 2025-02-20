@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:pacman_game/ghost.dart';
 import 'package:pacman_game/path.dart';
@@ -13,11 +12,12 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  static int numberInRow = 11;
-  int numberOfSquares = numberInRow * 17;
-  int player = numberInRow * 15 + 1;
+  static int numberInRow = 11; // Número de cuadros por fila
+  int numberOfSquares = numberInRow * 17; // Número total de cuadros en el tablero
+  int player = numberInRow * 15 + 1; // Posición inicial del jugador
   int ghost = numberInRow * 1 + 1; // Posición inicial del fantasma
 
+  // Lista de posiciones que representan las barreras (paredes)
   List<int> barriers = [
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 22, 33, 44, 55, 66, 77, 99, 110,
     121, 132, 143, 154, 165, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185,
@@ -27,49 +27,50 @@ class _HomePageState extends State<HomePage> {
     127, 123, 134, 145, 156, 129, 140, 151, 162, 147, 148, 149, 158, 160
   ];
 
-  List<int> food = [];
-  String direction = "right";
-  bool preGame = true;
-  bool mouthClosed = false;
-  int score = 0;
-  Timer? gameTimer;
+  List<int> food = []; // Lista de posiciones de la comida
+  String direction = "right"; // Dirección inicial del jugador
+  bool preGame = true; // Estado pre-juego (antes de iniciar)
+  bool mouthClosed = false; // Estado de la boca del jugador (abierta/cerrada)
+  int score = 0; // Puntuación del jugador
+  Timer? gameTimer; // Temporizador para controlar el flujo del juego
 
-  // Lógica para inicializar la comida
+  // Método para inicializar la comida en el tablero
   void getFood() {
-    food.clear(); // Limpiar la lista de comida antes de inicializarla
+    food.clear(); // Limpiar la lista de comida existente
     for (int i = 0; i < numberOfSquares; i++) {
       if (!barriers.contains(i)) {
-        food.add(i);
+        food.add(i); // Agregar comida en posiciones que no son barreras
       }
     }
   }
 
-  // Reiniciar el juego
+  // Método para reiniciar el juego
   void resetGame() {
     setState(() {
-      player = numberInRow * 15 + 1; // Posición inicial del jugador
-      ghost = numberInRow * 1 + 1; // Posición inicial del fantasma
-      score = 0; // Reiniciar el score
-      direction = "right"; // Reiniciar la dirección
+      player = numberInRow * 15 + 1; // Reiniciar posición del jugador
+      ghost = numberInRow * 1 + 1; // Reiniciar posición del fantasma
+      score = 0; // Reiniciar la puntuación
+      direction = "right"; // Reiniciar la dirección del jugador
       preGame = true; // Volver al estado pre-juego
       food.clear(); // Limpiar la lista de comida
       getFood(); // Inicializar la comida nuevamente
     });
   }
 
-  // Lógica para iniciar el juego
+  // Método para iniciar el juego
   void startGame() {
-    preGame = false;
-    getFood(); // Inicializar la lista de comida
+    preGame = false; // Cambiar al estado de juego activo
+    getFood(); // Inicializar la comida
     gameTimer = Timer.periodic(Duration(milliseconds: 190), (timer) {
+      // Verificar si el jugador recolecta comida
       if (food.contains(player)) {
         setState(() {
-          food.remove(player); // Eliminar la comida si el jugador está sobre ella
-          score++;
+          food.remove(player); // Eliminar la comida recolectada
+          score++; // Incrementar la puntuación
         });
       }
 
-      // Verificar si el jugador ha ganado
+      // Verificar si el jugador ha ganado (score == 87)
       if (score == 87) {
         timer.cancel(); // Detener el temporizador
         showDialog(
@@ -81,7 +82,7 @@ class _HomePageState extends State<HomePage> {
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).pop();
+                    Navigator.of(context).pop(); // Cerrar el diálogo
                     resetGame(); // Reiniciar el juego
                   },
                   child: Text("OK"),
@@ -93,19 +94,19 @@ class _HomePageState extends State<HomePage> {
         return;
       }
 
-      // Verificar si el jugador ha perdido
+      // Verificar si el jugador ha perdido (colisión con el fantasma)
       if (player == ghost) {
         timer.cancel(); // Detener el temporizador
         showDialog(
           context: context,
           builder: (context) {
             return AlertDialog(
-              title: Text("¡Perdiste!"),
+              title: Text("¡Perdiste!", style: TextStyle(fontWeight: FontWeight.bold),),
               content: Text("El fantasma te ha atrapado."),
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).pop();
+                    Navigator.of(context).pop(); // Cerrar el diálogo
                     resetGame(); // Reiniciar el juego
                   },
                   child: Text("OK"),
@@ -117,8 +118,20 @@ class _HomePageState extends State<HomePage> {
         return;
       }
 
+      // Teletransporte automático entre los cuadros 88 y 98
+      if (player == 88) {
+        setState(() {
+          player = 98; // Teletransportar al jugador al cuadro 98
+        });
+      } else if (player == 98) {
+        setState(() {
+          player = 88; // Teletransportar al jugador al cuadro 88
+        });
+      }
+
       moveGhost(); // Mover el fantasma
 
+      // Mover al jugador según la dirección actual
       switch (direction) {
         case "left":
           moveLeft();
@@ -136,49 +149,53 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // Lógica del movimiento del jugador
+  // Método para mover al jugador hacia la izquierda
   void moveLeft() {
     if (!barriers.contains(player - 1)) {
       setState(() {
-        player--;
+        player--; // Mover al jugador a la izquierda
       });
     }
   }
 
+  // Método para mover al jugador hacia la derecha
   void moveRight() {
     if (!barriers.contains(player + 1)) {
       setState(() {
-        player++;
+        player++; // Mover al jugador a la derecha
       });
     }
   }
 
+  // Método para mover al jugador hacia arriba
   void moveUp() {
     if (!barriers.contains(player - numberInRow)) {
       setState(() {
-        player -= numberInRow;
+        player -= numberInRow; // Mover al jugador hacia arriba
       });
     }
   }
 
+  // Método para mover al jugador hacia abajo
   void moveDown() {
     if (!barriers.contains(player + numberInRow)) {
       setState(() {
-        player += numberInRow;
+        player += numberInRow; // Mover al jugador hacia abajo
       });
     }
   }
 
-  // Lógica para mover el fantasma
+  // Método para mover el fantasma
   void moveGhost() {
     int newGhostPosition = ghost;
 
-    // Determinar la dirección hacia el jugador
+    // Calcular la posición del jugador y el fantasma
     int playerRow = player ~/ numberInRow;
     int playerCol = player % numberInRow;
     int ghostRow = ghost ~/ numberInRow;
     int ghostCol = ghost % numberInRow;
 
+    // Mover el fantasma hacia el jugador
     if (playerRow < ghostRow && !barriers.contains(ghost - numberInRow)) {
       newGhostPosition = ghost - numberInRow; // Mover hacia arriba
     } else if (playerRow > ghostRow && !barriers.contains(ghost + numberInRow)) {
@@ -190,20 +207,23 @@ class _HomePageState extends State<HomePage> {
     }
 
     setState(() {
-      ghost = newGhostPosition;
+      ghost = newGhostPosition; // Actualizar la posición del fantasma
     });
   }
 
+  // Método para construir la interfaz de usuario
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.black, // Fondo negro
       body: Column(
         children: [
+          // Área del tablero de juego
           Expanded(
             flex: 5,
             child: GestureDetector(
               onVerticalDragUpdate: (details) {
+                // Cambiar la dirección al arrastrar verticalmente
                 if (details.delta.dy > 0) {
                   direction = "down";
                 } else if (details.delta.dy < 0) {
@@ -211,6 +231,7 @@ class _HomePageState extends State<HomePage> {
                 }
               },
               onHorizontalDragUpdate: (details) {
+                // Cambiar la dirección al arrastrar horizontalmente
                 if (details.delta.dx > 0) {
                   direction = "right";
                 } else if (details.delta.dx < 0) {
@@ -219,12 +240,13 @@ class _HomePageState extends State<HomePage> {
               },
               child: Container(
                 child: GridView.builder(
-                  physics: NeverScrollableScrollPhysics(),
-                  itemCount: numberOfSquares,
+                  physics: NeverScrollableScrollPhysics(), // Deshabilitar desplazamiento
+                  itemCount: numberOfSquares, // Número total de cuadros
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: numberInRow,
+                    crossAxisCount: numberInRow, // Número de columnas
                   ),
                   itemBuilder: (BuildContext context, int index) {
+                    // Renderizar cada cuadro del tablero
                     if (mouthClosed) {
                       return Padding(
                         padding: EdgeInsets.all(4),
@@ -236,7 +258,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                       );
                     } else if (player == index) {
-                      // Rotación del jugador según la dirección
+                      // Renderizar al jugador con rotación según la dirección
                       switch (direction) {
                         case "left":
                           return Transform.rotate(
@@ -259,22 +281,22 @@ class _HomePageState extends State<HomePage> {
                           return MyPlayer();
                       }
                     } else if (ghost == index) {
-                      // Mostrar el fantasma
+                      // Renderizar al fantasma
                       return MyGhost();
                     } else if (barriers.contains(index)) {
-                      // Mostrar barreras
+                      // Renderizar barreras
                       return MyPixel(
                         innerColor: Colors.blue[900],
                         outerColor: Colors.blue[800],
                       );
                     } else if (food.contains(index)) {
-                      // Mostrar comida
+                      // Renderizar comida
                       return MyPath(
                         innerColor: Colors.yellow,
                         outerColor: Colors.black,
                       );
                     } else {
-                      // Mostrar camino vacío
+                      // Renderizar camino vacío
                       return MyPath(
                         innerColor: Colors.black,
                         outerColor: Colors.black,
@@ -285,17 +307,18 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
+          // Área de puntuación y botón de inicio
           Expanded(
             child: Container(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   Text(
-                    "Score: " + score.toString(),
+                    "Score: " + score.toString(), // Mostrar la puntuación
                     style: TextStyle(color: Colors.white, fontSize: 40),
                   ),
                   GestureDetector(
-                    onTap: startGame,
+                    onTap: startGame, // Iniciar el juego al tocar
                     child: Text(
                       "P L A Y",
                       style: TextStyle(color: Colors.white, fontSize: 40),
